@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#104F3F">
+    <meta name="description" content="تطبيق ورد النشامى - أذكار ومتابعة يومية">
+    <title>وِرد Pro | Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 1. Design Tokens & Variables --- */
+        :root {
+            --primary: #104F3F;
+            --primary-soft: #D1E5E0;
+            --accent: #C5A028;
+            --accent-glow: rgba(197, 160, 40, 0.4);
+            
+            --bg-base: #F3F5F4;
+            --bg-mesh-1: #E0ECE9;
+            --bg-mesh-2: #F7EFE5;
+            
+            /* Glass System - Light */
+            --glass-surface: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-highlight: rgba(255, 255, 255, 0.4);
+            --sidebar-bg: rgba(255, 255, 255, 0.4);
+            --input-bg: rgba(0, 0, 0, 0.04);
+            
+            --glass-blur: blur(24px);
+            
+            --text-main: #1A202C;
+            --text-muted: #64748B;
+            --font-main: 'Tajawal', sans-serif;
+            
+            --spring-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --soft-ease: cubic-bezier(0.4, 0.0, 0.2, 1);
+            
+            --shadow-sm: 0 4px 12px rgba(16, 79, 63, 0.05);
+            --shadow-lg: 0 20px 40px -8px rgba(16, 79, 63, 0.12);
+            --shadow-inner: inset 0 2px 4px rgba(255, 255, 255, 0.9);
+        }
+
+        /* --- Dark Mode Overrides (CORRECTED) --- */
+        [data-theme="dark"] {
+            --primary: #4FD1C5;
+            --primary-soft: #1A302E;
+            --accent: #F6E05E;
+            --accent-glow: rgba(246, 224, 94, 0.3);
+            
+            --bg-base: #0F1312;
+            --bg-mesh-1: #152522;
+            --bg-mesh-2: #050505;
+            
+            /* Glass System - Dark (Fixed for readability) */
+            --glass-surface: rgba(30, 30, 30, 0.7); /* Darker glass */
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.02);
+            --sidebar-bg: rgba(20, 20, 20, 0.6); /* Dark Sidebar */
+            --input-bg: rgba(255, 255, 255, 0.1); /* Visible inputs */
+            
+            --text-main: #FFFFFF; /* Pure White text */
+            --text-muted: #A0AEC0;
+            
+            --shadow-sm: 0 4px 20px rgba(0,0,0,0.4);
+            --shadow-inner: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- 2. Reset & Base --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
+        body {
+            margin: 0; font-family: var(--font-main); background: var(--bg-base);
+            height: 100vh; overflow: hidden; color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+
+        .bg-mesh {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 0% 0%, var(--bg-mesh-1) 0%, transparent 50%),
+                        radial-gradient(circle at 100% 100%, var(--bg-mesh-2) 0%, transparent 50%);
+            filter: blur(60px); animation: breathe 10s infinite alternate ease-in-out;
+            transition: background 0.5s ease;
+        }
+        @keyframes breathe { 0% { opacity: 0.8; transform: scale(1); } 100% { opacity: 1; transform: scale(1.1); } }
+
+        /* --- 3. Layout: Mobile First --- */
+        .app-shell {
+            height: 100%; display: flex; flex-direction: column;
+            max-width: 500px; margin: 0 auto; position: relative;
+        }
+
+        /* Top Bar (Mobile) */
+        .top-bar {
+            padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+        .user-greeting { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; color: var(--text-main); }
+        .user-greeting span { color: var(--text-muted); font-weight: 400; font-size: 0.9rem; }
+        
+        .streak-pill {
+            background: var(--glass-surface); backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); padding: 6px 14px;
+            border-radius: 30px; font-size: 0.85rem; font-weight: 700;
+            display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow-sm); color: var(--primary);
+        }
+
+        /* Sidebar (Hidden on Mobile) */
+        .desktop-sidebar { display: none; }
+
+        /* Reels Container (Mobile Style) */
+        #reels-container {
+            flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory;
+            scroll-behavior: smooth; padding: 20px 0;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        #reels-container::-webkit-scrollbar { display: none; }
+
+        .reel-section {
+            height: 100%; width: 100%; scroll-snap-align: center;
+            display: flex; justify-content: center; align-items: center;
+            padding: 20px 24px 100px 24px; perspective: 1000px;
+        }
+
+        .dhikr-card {
+            background: var(--glass-surface); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); box-shadow: var(--shadow-lg), var(--shadow-inner);
+            border-radius: 32px; padding: 40px 24px;
+            width: 100%; height: 100%; max-height: 600px;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            position: relative; transition: all 0.6s var(--spring-ease);
+            transform-style: preserve-3d; overflow: hidden;
+        }
+        
+        /* Mobile Active State */
+        .reel-section.active .dhikr-card { opacity: 1; transform: scale(1) translateY(0); }
+        .reel-section:not(.active) .dhikr-card { opacity: 0.7; transform: scale(0.95) translateY(10px); filter: blur(2px); }
+
+        .dhikr-card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 150px;
+            background: linear-gradient(to bottom, var(--glass-highlight), transparent); pointer-events: none;
+        }
+
+        .card-header { text-align: center; z-index: 2; width: 100%; }
+        .dhikr-title { font-size: 1.6rem; line-height: 1.5; font-weight: 600; margin: 0; color: var(--text-main); }
+        .dhikr-meta { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        /* Ring Component */
+        .progress-container {
+            position: relative; width: 240px; height: 240px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border-radius: 50%; transition: transform 0.1s var(--soft-ease);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .progress-container:active { transform: scale(0.96); }
+        .glow-fx {
+            position: absolute; width: 180px; height: 180px; background: var(--accent);
+            border-radius: 50%; filter: blur(40px); opacity: 0; transition: opacity 0.5s ease; z-index: 0;
+        }
+        .progress-container.active .glow-fx { opacity: 0.4; }
+        .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; z-index: 2; }
+        .ring-bg { fill: none; stroke: var(--text-muted); stroke-width: 4; opacity: 0.1; }
+        .ring-fg {
+            fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round;
+            stroke-dasharray: 660; stroke-dashoffset: 660;
+            transition: stroke-dashoffset 0.5s var(--spring-ease); filter: drop-shadow(0 0 4px var(--accent-glow));
+        }
+        .counter-content {
+            position: absolute; z-index: 3; display: flex; flex-direction: column; align-items: center; pointer-events: none;
+        }
+        .count-number { font-size: 4.5rem; font-weight: 300; color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -2px; }
+        .tap-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; opacity: 0.7; }
+
+        /* Mobile Floating Dock */
+        .nav-dock {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 10px 12px; border-radius: 50px; display: flex; gap: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); z-index: 100;
+        }
+        [data-theme="dark"] .nav-dock { background: rgba(30,30,30,0.85); border-color: rgba(255,255,255,0.1); }
+        .nav-item {
+            width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s var(--soft-ease); color: var(--text-muted);
+        }
+        .nav-item svg { width: 22px; height: 22px; stroke-width: 2; fill: none; stroke: currentColor; }
+        .nav-item:hover { background: rgba(0,0,0,0.03); color: var(--primary); }
+        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(16,79,63,0.3); }
+
+        /* --- 4. DESKTOP / LAPTOP REDESIGN (Dashboard Mode) --- */
+        @media (min-width: 1024px) {
+            body { padding: 40px; overflow: hidden; }
+
+            .app-shell {
+                max-width: 1400px; height: 90vh;
+                background: var(--glass-surface);
+                border-radius: 40px;
+                border: 1px solid var(--glass-border);
+                box-shadow: var(--shadow-lg);
+                backdrop-filter: blur(40px);
+                flex-direction: row; /* Side-by-side layout */
+                overflow: hidden;
+            }
+
+            /* Hide Mobile Nav & Top Bar */
+            .nav-dock, .top-bar { display: none; }
+
+            /* Desktop Sidebar */
+            .desktop-sidebar {
+                display: flex; flex-direction: column;
+                width: 280px; height: 100%;
+                border-left: 1px solid rgba(0,0,0,0.05); /* RTL Border */
+                padding: 40px 30px;
+                background: var(--sidebar-bg); /* Use dynamic variable */
+                transition: background 0.3s ease;
+            }
+
+            .sidebar-profile { margin-bottom: 40px; }
+            .sidebar-profile h2 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+            .sidebar-profile p { margin: 5px 0 0; color: var(--text-muted); font-size: 0.9rem; }
+
+            .sidebar-menu { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+            .menu-btn {
+                background: transparent; border: none; padding: 15px; border-radius: 12px;
+                text-align: right; font-family: inherit; font-size: 1rem; color: var(--text-main);
+                cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s;
+            }
+            .menu-btn:hover { background: rgba(0,0,0,0.05); }
+            .menu-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(16,79,63,0.2); }
+            .menu-btn svg { width: 20px; height: 20px; }
+
+            .sidebar-stats {
+                background: white; padding: 20px; border-radius: 20px;
+                box-shadow: var(--shadow-sm); text-align: center;
+            }
+            [data-theme="dark"] .sidebar-stats { background: rgba(255,255,255,0.05); }
+
+            /* Desktop Grid (Replaces Reels) */
+            #reels-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 24px; padding: 40px;
+                scroll-snap-type: none; overflow-y: auto;
+                align-content: start;
+            }
+
+            .reel-section {
+                height: auto; width: auto; padding: 0;
+                scroll-snap-align: none; perspective: none;
+            }
+
+            /* Widget Style Cards */
+            .dhikr-card {
+                height: 380px; max-height: none; padding: 30px 20px;
+                border-radius: 24px;
+                background: rgba(255,255,255,0.5); /* Light default */
+                box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+                transform: none !important; opacity: 1 !important; filter: none !important;
+            }
+            [data-theme="dark"] .dhikr-card {
+                background: rgba(255,255,255,0.05); /* Dark card background */
+            }
+            
+            .dhikr-card:hover { transform: translateY(-5px) !important; box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
+
+            .progress-container { width: 160px; height: 160px; }
+            .count-number { font-size: 2.5rem; }
+            .glow-fx { width: 120px; height: 120px; }
+            .dhikr-title { font-size: 1.1rem; margin-bottom: 5px; }
+            .card-header { margin-bottom: 10px; }
+        }
+
+        /* Modals & Utils */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.01); backdrop-filter: blur(4px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            display: flex; align-items: flex-end; justify-content: center;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .sheet {
+            background: var(--bg-base); width: 100%; max-width: 500px;
+            border-radius: 32px 32px 0 0; padding: 30px; color: var(--text-main);
+            box-shadow: var(--shadow-lg); transform: translateY(100%); transition: transform 0.4s var(--spring-ease);
+            max-height: 85vh; overflow-y: auto; position: relative;
+        }
+        @media (min-width: 1024px) {
+            .modal-overlay { align-items: center; background: rgba(0,0,0,0.4); }
+            .sheet { border-radius: 24px; transform: scale(0.9); opacity: 0; }
+            .modal-overlay.open .sheet { transform: scale(1); opacity: 1; }
+        }
+        .modal-overlay.open .sheet { transform: translateY(0); }
+        .sheet-handle { width: 40px; height: 4px; background: var(--text-muted); opacity: 0.2; border-radius: 2px; margin: 0 auto 25px auto; }
+        
+        h2 { margin: 0 0 20px 0; color: var(--primary); font-size: 1.5rem; }
+        .btn-primary {
+            background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 16px;
+            font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 15px rgba(16,79,63,0.2); transition: transform 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        
+        input, select {
+            width: 100%; padding: 16px; background: var(--input-bg); border: 1px solid rgba(0,0,0,0.1); border-radius: 12px;
+            font-family: inherit; font-size: 1rem; color: var(--text-main); margin-bottom: 12px;
+        }
+        input:focus { border-color: var(--primary); }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: white; padding: 15px; border-radius: 16px; text-align: center; box-shadow: var(--shadow-sm); }
+        [data-theme="dark"] .stat-box { background: rgba(255,255,255,0.05); }
+        
+        .stat-num { font-size: 1.8rem; font-weight: 700; color: var(--primary); display: block; }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+        .chart-bars { display: flex; align-items: flex-end; height: 120px; gap: 6px; padding: 10px 0; }
+        .chart-bar { flex: 1; background: var(--primary-soft); border-radius: 4px; position: relative; transition: height 1s var(--spring-ease); }
+        .chart-bar.active { background: var(--accent); }
+        .badge-row { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
+        .badge {
+            min-width: 80px; height: 80px; background: rgba(0,0,0,0.03); border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; border: 2px solid transparent; opacity: 0.4; filter: grayscale(1);
+        }
+        .badge.earned { opacity: 1; filter: grayscale(0); background: rgba(255,255,255,0.5); border-color: var(--accent); box-shadow: 0 4px 10px rgba(197, 160, 40, 0.2); }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-mesh"></div>
+
+    <div class="app-shell">
+        
+        <aside class="desktop-sidebar">
+            <div class="sidebar-profile">
+                <h2>وِرد Pro</h2>
+                <p>أهلاً، <span id="desktop-username">يا نشمي</span></p>
+            </div>
+
+            <nav class="sidebar-menu">
+                <button class="menu-btn active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                    الرئيسية
+                </button>
+                <button class="menu-btn" onclick="UI.toggleModal('stats-modal')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+                    الإحصائيات
+                </button>
+                <button class="menu-btn" onclick="UI.toggleModal('settings-modal')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    الإعدادات
+                </button>
+                <button class="menu-btn" onclick="App.toggleTheme()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line></svg>
+                    المظهر
+                </button>
+            </nav>
+
+            <div class="sidebar-stats">
+                <div style="font-size:0.8rem; color:var(--text-muted)">الأيام المتتالية</div>
+                <div style="font-size:2rem; font-weight:bold; color:var(--accent)" id="desktop-streak">0</div>
+                <div style="font-size:0.7rem; color:var(--primary)">ما شاء الله</div>
+            </div>
+        </aside>
+
+        <header class="top-bar">
+            <div class="user-greeting" id="greeting-display">
+                مرحباً، <span id="username-disp">يا نشمي</span>
+            </div>
+            <div class="streak-pill">
+                🔥 <span id="streak-disp">0</span>
+            </div>
+        </header>
+
+        <main id="reels-container">
+            </main>
+
+        <nav class="nav-dock">
+            <button class="nav-item" onclick="UI.toggleModal('stats-modal')">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
+            </button>
+            <button class="nav-item active" onclick="App.scrollToTop()">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </button>
+            <button class="nav-item" onclick="UI.toggleModal('settings-modal')">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2-2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </nav>
+    </div>
+
+    <div id="stats-modal" class="modal-overlay" onclick="if(event.target === this) UI.toggleModal('stats-modal')">
+        <div class="sheet">
+            <div class="sheet-handle"></div>
+            <h2>رحلتك</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span class="stat-num" id="total-disp">0</span>
+                    <span class="stat-label">مجموع الأذكار</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="modal-streak">0</span>
+                    <span class="stat-label">أيام متتالية</span>
+                </div>
+            </div>
+            <div class="chart-bars" id="weekly-chart"></div>
+            <div class="badge-row" id="badges-container" style="margin-top:20px"></div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay" onclick="if(event.target === this) UI.toggleModal('settings-modal')">
+        <div class="sheet">
+            <div class="sheet-handle"></div>
+            <h2>الإعدادات</h2>
+            <input type="text" id="new-text" placeholder="نص الذكر الجديد">
+            <input type="number" id="new-target" placeholder="العدد" value="33">
+            <button class="btn-primary" onclick="App.addCustomDhikr()">إضافة</button>
+            <hr style="margin:20px 0; opacity:0.1">
+            <button class="btn-primary" onclick="Data.exportData()" style="background:#555">حفظ نسخة</button>
+            <input type="file" id="file-input" hidden onchange="Data.importData(this)">
+            <button class="btn-primary" onclick="document.getElementById('file-input').click()" style="background:transparent; color:var(--text-muted); border:1px solid var(--text-muted); margin-top:5px">استرجاع</button>
+        </div>
+    </div>
+
+    <div id="welcome-modal" class="modal-overlay">
+        <div class="sheet" style="text-align: center;">
+            <h2>حيا الله النشمي 👋</h2>
+            <input type="text" id="username-input" placeholder="اسمك الكريم" style="text-align:center;">
+            <button class="btn-primary" onclick="App.setUsername()">بدء الرحلة</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Audio & Core ---
+        const AudioFX = {
+            ctx: null,
+            init() { window.AudioContext = window.AudioContext || window.webkitAudioContext; this.ctx = new AudioContext(); },
+            playPop(pitch) {
+                if (!this.ctx) this.init(); if (this.ctx.state === 'suspended') this.ctx.resume();
+                const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                o.frequency.setValueAtTime(300 * pitch, this.ctx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                g.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+                o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + 0.15);
+            }
+        };
+
+        const Store = {
+            state: { user: { name: '' }, settings: { theme: 'light' }, tasks: [], stats: { streak: 0, lastLog: null, total: 0, history: {} } },
+            defaults: [
+                { id: 't1', text: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ', target: 33 },
+                { id: 't2', text: 'أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ', target: 100 },
+                { id: 't3', text: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ', target: 10 },
+                { id: 't4', text: 'لَا إِلَهَ إِلَّا اللَّهُ', target: 100 },
+                { id: 't5', text: 'سُبْحَانَ اللَّهِ', target: 33 },
+                { id: 't6', text: 'الْحَمْدُ لِلَّهِ', target: 33 }
+            ],
+            init() {
+                const s = localStorage.getItem('wird_pro_v3');
+                if (s) this.state = JSON.parse(s);
+                else this.state.tasks = this.defaults.map(t => ({...t, count: 0}));
+                this.checkDate();
+            },
+            save() { localStorage.setItem('wird_pro_v3', JSON.stringify(this.state)); },
+            checkDate() {
+                const t = new Date().toISOString().split('T')[0];
+                if (this.state.stats.lastLog !== t) {
+                    this.state.tasks.forEach(x => x.count = 0);
+                    this.state.stats.lastLog = t;
+                    this.save();
+                }
+            }
+        };
+
+        const UI = {
+            init() {
+                if (Store.state.settings.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+                this.renderReels();
+                this.updateGlobal();
+                this.setupObserver();
+            },
+            renderReels() {
+                const c = document.getElementById('reels-container'); c.innerHTML = '';
+                Store.state.tasks.forEach(t => {
+                    const el = document.createElement('div'); el.className = 'reel-section';
+                    el.innerHTML = `
+                        <div class="dhikr-card">
+                            <div class="card-header"><h3 class="dhikr-title">${t.text}</h3><div class="dhikr-meta">الهدف: ${t.target}</div></div>
+                            <div class="progress-container" id="btn-${t.id}" onclick="App.tap('${t.id}')">
+                                <div class="glow-fx"></div>
+                                <svg class="ring-svg" viewBox="0 0 220 220">
+                                    <circle class="ring-bg" cx="110" cy="110" r="105"></circle>
+                                    <circle class="ring-fg" id="ring-${t.id}" cx="110" cy="110" r="105"></circle>
+                                </svg>
+                                <div class="counter-content">
+                                    <span class="count-number" id="num-${t.id}">${t.target - t.count}</span>
+                                    <span class="tap-hint">اضغط</span>
+                                </div>
+                            </div>
+                            <div style="height:10px"></div>
+                        </div>`;
+                    c.appendChild(el);
+                    this.updateRing(t.id, t.count, t.target);
+                });
+            },
+            updateRing(id, c, t) {
+                const r = document.getElementById(`ring-${id}`), n = document.getElementById(`num-${id}`), b = document.getElementById(`btn-${id}`);
+                const off = (2 * Math.PI * 105) * (1 - c/t);
+                r.style.strokeDashoffset = off;
+                n.innerText = Math.max(0, t - c);
+                if (c > 0) b.classList.add('active'); else b.classList.remove('active');
+                if (c >= t) { n.innerText = "✨"; r.style.stroke = "var(--primary)"; }
+            },
+            updateGlobal() {
+                const name = Store.state.user.name || "يا نشمي";
+                document.getElementById('username-disp').innerText = name;
+                document.getElementById('desktop-username').innerText = name;
+                document.getElementById('streak-disp').innerText = Store.state.stats.streak;
+                document.getElementById('desktop-streak').innerText = Store.state.stats.streak;
+                document.getElementById('total-disp').innerText = Store.state.stats.total;
+                document.getElementById('modal-streak').innerText = Store.state.stats.streak;
+                
+                // Chart
+                const ch = document.getElementById('weekly-chart'); ch.innerHTML = '';
+                for(let i=6; i>=0; i--) {
+                    const d = new Date(); d.setDate(d.getDate()-i);
+                    const k = d.toISOString().split('T')[0];
+                    const v = (Store.state.stats.history[k] || 0) / 100;
+                    ch.innerHTML += `<div class="chart-bar ${i===0?'active':''}" style="height:${Math.min(v*100 + 10, 100)}%"></div>`;
+                }
+                
+                // Badges
+                const bs = [{l:100,i:'🌱'},{l:1000,i:'⭐'},{l:5000,i:'🌔'}];
+                document.getElementById('badges-container').innerHTML = bs.map(b => 
+                    `<div class="badge ${Store.state.stats.total>=b.l?'earned':''}">${b.i}</div>`).join('');
+            },
+            setupObserver() {
+                if(window.innerWidth > 1024) return; // Disable observer on desktop
+                const obs = new IntersectionObserver(es => es.forEach(e => {
+                    e.target.classList.toggle('active', e.isIntersecting);
+                }), {threshold: 0.6});
+                document.querySelectorAll('.reel-section').forEach(e => obs.observe(e));
+            },
+            toggleModal(id) {
+                const m = document.getElementById(id);
+                if(m.classList.contains('open')) m.classList.remove('open');
+                else { m.classList.add('open'); if(id==='stats-modal') this.updateGlobal(); }
+            }
+        };
+
+        const App = {
+            init() {
+                Store.init(); AudioFX.init();
+                if(!Store.state.user.name) UI.toggleModal('welcome-modal'); else UI.init();
+            },
+            tap(id) {
+                const t = Store.state.tasks.find(x => x.id === id);
+                if (t.count < t.target) {
+                    t.count++; Store.state.stats.total++;
+                    const today = new Date().toISOString().split('T')[0];
+                    if(!Store.state.stats.history[today]) {
+                        Store.state.stats.history[today] = 1; 
+                        Store.state.stats.streak++; 
+                    } else Store.state.stats.history[today]++;
+                    
+                    Store.save(); UI.updateRing(id, t.count, t.target); UI.updateGlobal();
+                    AudioFX.playPop(1 + (t.count/t.target));
+                    if(navigator.vibrate) navigator.vibrate(10);
+                }
+            },
+            setUsername() {
+                const n = document.getElementById('username-input').value.trim();
+                if(n) { Store.state.user.name = n; Store.save(); document.getElementById('welcome-modal').classList.remove('open'); UI.init(); }
+            },
+            addCustomDhikr() {
+                const tx = document.getElementById('new-text').value, tg = document.getElementById('new-target').value;
+                if(tx && tg) { Store.state.tasks.push({id:'c'+Date.now(), text:tx, target:tg, count:0}); Store.save(); UI.renderReels(); UI.toggleModal('settings-modal'); }
+            },
+            toggleTheme() {
+                const d = document.documentElement.getAttribute('data-theme') === 'dark';
+                document.documentElement.setAttribute('data-theme', d ? 'light':'dark');
+                Store.state.settings.theme = d ? 'light':'dark'; Store.save();
+            },
+            scrollToTop() { document.getElementById('reels-container').scrollTo({top:0, behavior:'smooth'}); }
+        };
+
+        const Data = {
+            exportData() {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([JSON.stringify(Store.state)], {type:'application/json'}));
+                a.download = 'wird-backup.json'; a.click();
+            },
+            importData(i) {
+                const f = i.files[0], r = new FileReader();
+                if(f) { r.onload = e => { Store.state = JSON.parse(e.target.result); Store.save(); location.reload(); }; r.readAsText(f); }
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+</body>
+</html>
